@@ -1,0 +1,41 @@
+services:
+  # postgres:
+  #   image: postgres:15
+  #   container_name: recruitment-db
+  #   environment:
+  #     POSTGRES_DB: recruitment
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #     - ./database.sql:/docker-entrypoint-initdb.d/01-database.sql
+  #   networks:
+  #     - recruitment-network
+
+  rust-backend:
+    build: .
+    container_name: recruitment-api
+    environment:
+      DATABASE_URL: postgres://postgres:password@postgres:5432/recruitment
+      JWT_SECRET: your-super-secret-jwt-key-here-change-this-in-production
+      RUST_LOG: info
+    ports:
+      - "3000:3000"
+    # depends_on:
+    #   - postgres
+    networks:
+      - recruitment-network
+    volumes:
+      - .:/app
+      - cargo-cache:/usr/local/cargo/registry
+
+volumes:
+  postgres_data:
+  cargo-cache:
+
+
+networks:
+  recruitment-network:
+    driver: bridge

@@ -1,12 +1,12 @@
-mod lib;
 mod models;
 mod handlers;
 mod database;
 mod auth;
 mod error;
+mod utils;
 
 use axum::{
-    routing::{get, post},
+    routing::{get, post, put, delete},
     middleware,
     extract::State,
     http::StatusCode,
@@ -18,7 +18,7 @@ use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
-use lib::AppError;
+use error::AppError;
 use auth::{AuthService, auth_middleware};
 use handlers::*;
 
@@ -64,25 +64,32 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/auth/register", post(register))
         .route("/api/auth/login", post(login))
         .route("/api/auth/me", get(get_current_user))
+        .route("/api/auth/update-password", post(update_password))
         
         // Client routes
         .route("/api/clients", get(get_clients).post(create_client))
-        .route("/api/clients/:id", get(get_client))
+        .route("/api/clients/:id", get(get_client).put(update_client).delete(delete_client))
         
         // Worker routes
         .route("/api/workers", get(get_workers).post(create_worker))
-        .route("/api/workers/:id", get(get_worker))
+        .route("/api/workers/:id", get(get_worker).put(update_worker).delete(delete_worker))
+        .route("/api/workers/skills", get(get_worker_skills))
         
         // Job routes
         .route("/api/jobs", get(get_jobs).post(create_job))
-        .route("/api/jobs/:id", get(get_job))
+        .route("/api/jobs/:id", get(get_job).put(update_job).delete(delete_job))
+        .route("/api/jobs/:id/applications", get(get_job_applications))
         
         // Meeting routes
         .route("/api/meetings", get(get_meetings).post(create_meeting))
-        .route("/api/meetings/:id", get(get_meeting))
+        .route("/api/meetings/upcoming", get(get_upcoming_meetings))
+        .route("/api/meetings/:id", get(get_meeting).put(update_meeting).delete(delete_meeting))
+        .route("/api/meetings/:id/status", post(update_meeting_status))
         
-        // Matching route
-        .route("/api/match/:job_id", get(find_matches))
+        // Matching routes
+        .route("/api/match/job/:job_id", get(find_matches))
+        .route("/api/match/worker/:worker_id", get(find_jobs_for_worker))
+        .route("/api/match/stats", get(get_matching_stats))
         
         // Apply auth middleware to protected routes
         .route_layer(middleware::from_fn_with_state(
